@@ -127,8 +127,8 @@ const overrideLicenses = (licenseInformation, override) => {
 };
 
 const writeLicenseInformation = (outputWriter, dependencies) => {
-  if (typeof outputWriter === "string" && outputWriter !== "default") {
-    if (outputWriter === "default") {
+  if (!outputWriter || typeof outputWriter === "string") {
+    if (!outputWriter || outputWriter === "default") {
       outputWriter = resolve(__dirname, "./defaultOutputTemplate.ejs");
     } else if (outputWriter === "html") {
       outputWriter = resolve(__dirname, "./htmlOutputTemplate.ejs");
