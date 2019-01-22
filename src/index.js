@@ -53,7 +53,7 @@ class LicenseCheckerWebpackPlugin {
               obj[key] = true;
               return obj;
             }, {})
-          : undefined
+          : {}
       );
       if (emitError) {
         compilation.errors.push(...licenseViolations);

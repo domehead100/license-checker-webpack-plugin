@@ -59,7 +59,7 @@ const getLicenseInformationForCompilation = (compilation, filter, includeDelegat
 const getLicenseViolations = (licenseInformation, allow, allowOverride) => {
   return Object.keys(licenseInformation).reduce((memo, name) => {
     const { version, licenseName, licenseText } = licenseInformation[name];
-    if (allowOverride[licenseName]) {
+    if (allowOverride && allowOverride[licenseName]) {
       return memo;
     } else if (!licenseName || licenseName === "UNLICENSED") {
       memo.push(new LicenseError(`${name}@${version} is unlicensed`));
