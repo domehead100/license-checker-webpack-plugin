@@ -9,7 +9,7 @@ const isSatisfiedLicense = require("spdx-satisfies");
 const wrap = require("wrap-ansi");
 const LicenseError = require("./LicenseError");
 
-const licenseGlob = "LICENSE*";
+const licenseGlob = "@(LICENSE|LICENCE|COPYING)*";
 const licenseWrap = 80;
 
 const getLicenseContents = dependencyPath => {
@@ -19,19 +19,33 @@ const getLicenseContents = dependencyPath => {
 };
 
 const getLicenseInformationForDependency = dependencyPath => {
-  const package = require(`${dependencyPath}/package.json`);
+  const package = require.main.require(`${dependencyPath}/package.json`);
   return {
     name: package.name,
     version: package.version,
     author: (package.author && package.author.name) || package.author,
     repository: (package.repository && package.repository.url) || package.repository,
+    homepage: package.homepage || "",
     licenseName: package.license,
     licenseText: getLicenseContents(dependencyPath)
   };
 };
 
-const getLicenseInformationForCompilation = (compilation, filter) => {
-  const fileDependencies = Array.from(compilation.fileDependencies);
+const getLicenseInformationForCompilation = (compilation, filter, includeDelegated) => {
+  let fileDependencies = Array.from(compilation.fileDependencies);
+  if (includeDelegated) {
+    const delegated = compilation.modules
+      .filter(
+        m =>
+          m.delegateData &&
+          m.originalRequest &&
+          m.originalRequest.resource &&
+          (!m.issuer || !/node_modules/.test(m.issuer.context))
+      )
+      .map(m => m.originalRequest.resource);
+
+    fileDependencies = fileDependencies.concat(delegated);
+  }
   return fileDependencies.reduce((memo, dependencyPath) => {
     const match = dependencyPath.match(filter);
     if (match) {
@@ -42,21 +56,35 @@ const getLicenseInformationForCompilation = (compilation, filter) => {
   }, {});
 };
 
-const getLicenseViolations = (licenseInformation, allow) => {
+const getLicenseViolations = (licenseInformation, allow, allowOverride) => {
   return Object.keys(licenseInformation).reduce((memo, name) => {
-    const { version, licenseName } = licenseInformation[name];
-    if (!licenseName || licenseName === "UNLICENSED") {
+    const { version, licenseName, licenseText } = licenseInformation[name];
+    if (allowOverride[licenseName]) {
+      return memo;
+    } else if (!licenseName || licenseName === "UNLICENSED") {
       memo.push(new LicenseError(`${name}@${version} is unlicensed`));
     } else if (!isValidLicense(licenseName) || !isSatisfiedLicense(licenseName, allow)) {
       memo.push(new LicenseError(`${name}@${version} has disallowed license ${licenseName}`));
     }
+
+    if (!licenseText || !licenseText.trim())
+      memo.push(
+        new LicenseError(
+          `${name}@${version} has a license of type ${licenseName} but has no license text`
+        )
+      );
     return memo;
   }, []);
 };
 
-const getSortedLicenseInformation = licenseInformation => {
-  const licenses = Object.values(licenseInformation);
-  licenses.sort(({ name: nameA }, { name: nameB }) => (nameA < nameB ? -1 : nameA > nameB ? 1 : 0));
+const getSortedLicenseInformation = (licenseInformation, additionalLicenses) => {
+  let licenses = Object.values(licenseInformation);
+  if (additionalLicenses) licenses = licenses.concat(additionalLicenses);
+  licenses.sort(({ name: nameA }, { name: nameB }) => {
+    const a = String(nameA).toLowerCase();
+    const b = String(nameB).toLowerCase();
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
   return licenses;
 };
 
@@ -99,7 +127,12 @@ const overrideLicenses = (licenseInformation, override) => {
 };
 
 const writeLicenseInformation = (outputWriter, dependencies) => {
-  if (typeof outputWriter === "string") {
+  if (typeof outputWriter === "string" && outputWriter !== "default") {
+    if (outputWriter === "default") {
+      outputWriter = resolve(__dirname, "./defaultOutputTemplate.ejs");
+    } else if (outputWriter === "html") {
+      outputWriter = resolve(__dirname, "./htmlOutputTemplate.ejs");
+    }
     outputWriter = template(readFileSync(outputWriter));
   }
   return outputWriter({ dependencies });

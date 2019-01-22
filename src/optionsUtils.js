@@ -1,12 +1,11 @@
 const Joi = require("joi");
 
-const defaultOutputWriter = require("./defaultOutputWriter");
-
 const optionsSchema = Joi.object().keys({
   filter: Joi.object()
     .type(RegExp)
     .required(),
   allow: Joi.string().required(),
+  allowOverride: Joi.array().items(Joi.string()),
   ignore: Joi.array()
     .items(Joi.string())
     .required(),
@@ -15,17 +14,24 @@ const optionsSchema = Joi.object().keys({
   outputWriter: Joi.alternatives()
     .try(Joi.string(), Joi.func())
     .required(),
-  outputFilename: Joi.string().required()
+  outputFilename: Joi.string().required(),
+  whenInWatchMode: Joi.boolean(),
+  includeDelegated: Joi.boolean(),
+  additionalLicenses: Joi.array().items(Joi.alternatives().try(Joi.string(), Joi.object()))
 });
 
 const defaultOptions = {
   filter: /(^.*[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?(?:[^/\\]+)))/,
   allow: "(Apache-2.0 OR BSD-2-Clause OR BSD-3-Clause OR MIT)",
+  allowOverride: [],
   ignore: [],
   override: {},
   emitError: false,
-  outputWriter: defaultOutputWriter,
-  outputFilename: "ThirdPartyNotice.txt"
+  outputWriter: "default",
+  outputFilename: "ThirdPartyNotice.txt",
+  whenInWatchMode: false,
+  includeDelegated: false,
+  additionalLicenses: []
 };
 
 const getOptions = options => {

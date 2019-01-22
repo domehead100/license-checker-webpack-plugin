@@ -1,0 +1,121 @@
+<style>
+  .products {
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    clear: both;
+    overflow: auto;
+  }
+  .credits {
+    font-size: 164%;
+    font-weight: bold;
+  }
+  .product {
+    background-color: #c3d9ff;
+    border-radius: 5px;
+    margin-top: 16px;
+    overflow: auto;
+    padding: 2px;
+  }
+  .product .title {
+    float: left;
+    font-size: 110%;
+    font-weight: bold;
+    margin: 3px;
+    cursor: default;
+    width: 30rem;
+    white-space: nowrap;
+  }
+  .product .version {
+    float: left;
+    margin: 3px;
+    cursor: default;
+    width: 10rem;
+  }
+  .product .homepage {
+    color: blue;
+    float: right;
+    margin: 3px;
+    text-align: right;
+  }
+  .product .homepage::before {
+    content: " - ";
+  }
+  .product .show {
+    color: blue;
+    float: right;
+    margin: 3px;
+    text-align: right;
+    text-decoration: underline;
+  }
+  .license {
+    background-color: #e8eef7;
+    border-radius: 3px;
+    clear: both;
+    display: none;
+    padding: 16px;
+  }
+  .license h3 {
+    margin-top: 0;
+  }
+  .license pre {
+    white-space: pre-wrap;
+  }
+  .dialog #print-link,
+  .dialog .homepage {
+    display: none;
+  }
+  input + label + div {
+    display: none;
+  }
+  input + label::after {
+    content: "show license";
+    cursor: pointer;
+  }
+  input:checked + label + div {
+    display: block;
+  }
+  input:checked + label::after {
+    content: "hide license";
+    cursor: pointer;
+  }
+</style>
+<span class="credits" style="float: left;">Credits</span>
+<a id="print-link" href="#" style="float: right; margin-right: 10px;">Print</a>
+<!-- prettier-ignore -->
+<div class="products">
+  <% dependencies.forEach((dep, i) => { %> 
+    <% var version = dep.version || '' %>
+    <% var author = dep.author || '' %>
+  <div class="product">
+    <span class="title" title="<%= 'Version: ' + version %><%= '\nAuthor: ' + author %>">
+      <%= dep.name %>
+    </span>
+    <% if (false) { %> 
+        <label class="version"><%= version ? `v${version}` : '' %></label>
+        <label class="author"><%= author ? `${dep.author}` : '' %></label>
+    <% } %>
+    <% if (dep.homepage) { %>
+    <span class="homepage">
+      <a target="_blank" href="<%= dep.homepage %>" rel="noreferrer noopener">homepage</a>
+    </span>
+    <% } else if (dep.repository && /^https:\/\//.test(dep.repository)) { %>
+    <span class="homepage">
+      <a target="_blank" href="<%= dep.repository %>" rel="noreferrer noopener">homepage</a>
+    </span>
+    <% } else { %>
+    <span class="homepage">
+      <a
+        target="_blank"
+        href="https://www.npmjs.com/package/<%= dep.name %>"
+        rel="noreferrer noopener"
+        >homepage</a
+      >
+    </span>
+    <% } %>
+    <input type="checkbox" hidden id="<%=i%>" />
+    <label class="show" for="<%=i%>" tabindex="0"></label>
+    <div class="license">
+        <pre><%= dep.licenseText || dep.licenseName %></pre>
+    </div>
+  </div>
+  <% }) %>
+</div>

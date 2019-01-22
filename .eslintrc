@@ -8,6 +8,7 @@
   "extends": "eslint:recommended",
   "plugins": ["prettier"],
   "rules": {
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "no-debugger": "off"
   }
 }
