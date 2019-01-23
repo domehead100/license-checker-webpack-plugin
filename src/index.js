@@ -12,6 +12,7 @@ const { getOptions } = require("./optionsUtils");
 class LicenseCheckerWebpackPlugin {
   constructor(options) {
     this.options = getOptions(options);
+    this.licenseInfoWritten = false;
   }
 
   apply(compiler) {
@@ -37,6 +38,7 @@ class LicenseCheckerWebpackPlugin {
     }
 
     compiler.hooks.emit.tapPromise("LicenseCheckerWebpackPlugin", async compilation => {
+      if (this.licenseInfoWritten) return;
       let licenseInformation = getLicenseInformationForCompilation(
         compilation,
         filter,
@@ -68,6 +70,7 @@ class LicenseCheckerWebpackPlugin {
       compilation.assets[outputFilename] = new RawSource(
         writeLicenseInformation(outputWriter, sortedLicenseInformation)
       );
+      this.licenseInfoWritten = true;
     });
   }
 }
